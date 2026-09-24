@@ -1,0 +1,57 @@
+schema_version = 1
+
+[project]
+package = "lilygo-ui-music"
+version = "0.1.0"
+app_id = "cc.lilygo.ui.Music"
+title = "Music"
+summary = "A local music player with an iOS-inspired interface"
+description = "Browse and play local music with responsive portrait and landscape layouts, playback controls, seeking, volume, shuffle, repeat and favorites."
+license = "MIT"
+source_repo = "https://github.com/LILYGO-UI/lilygo-ui-music"
+homepage = "https://github.com/LILYGO-UI/lilygo-ui-music"
+categories = ["Multimedia"]
+
+[[project.authors]]
+name = "lbuque"
+email = "110239031@qq.com"
+
+[project.assets]
+icon = "assets/app-icon.png"
+
+[[project.assets.screenshots]]
+path = "assets/previews/music-portrait.png"
+caption = "Music library and player in portrait layout"
+
+[[project.assets.screenshots]]
+path = "assets/previews/music-landscape.png"
+caption = "Music library and player in landscape layout"
+
+[[project.permissions]]
+id = "filesystem"
+access = "read"
+scope = "shared-data"
+reason = "Read local music files from the configured music folder"
+
+[[project.permissions]]
+id = "filesystem"
+access = "read-write"
+scope = "app-data"
+reason = "Remember volume, playback preferences and favorite songs"
+
+[project.compatibility]
+architectures = ["arm64"]
+min_appkit_version = "0.1.0"
+
+[project.launcher]
+order = 90
+
+[build]
+host_preset = "host-simulator"
+cross_preset = "cm0-cross"
+package_dir = "dist"
+
+[deploy]
+host = "raspberrypi.local"
+user = "pi"
+port = 22
