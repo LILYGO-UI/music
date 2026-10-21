@@ -34,7 +34,7 @@ std::string preferred_audio_device()
     std::ifstream cards("/proc/asound/cards");
     std::string line;
     while (std::getline(cards, line)) {
-        if (line.find("CM0ES8389") != std::string::npos) return "alsa/dmix:CARD=CM0ES8389,DEV=0";
+        if (line.find("CM0ES8389") != std::string::npos) return "alsa/hw:CARD=CM0ES8389,DEV=0";
     }
 #endif
     return {};
@@ -212,7 +212,7 @@ private:
                 struct pollfd pending{socket_, POLLOUT, 0};
                 if (::poll(&pending, 1, 100) > 0) continue;
             }
-            fail("无法连接音频播放器");
+            fail("Unable to connect to the audio player");
             return false;
         }
         return true;
@@ -250,7 +250,7 @@ private:
         active_generation_ = request.generation;
         int sockets[2];
         if (::socketpair(AF_UNIX, SOCK_STREAM, 0, sockets) != 0) {
-            fail("无法创建音频连接");
+            fail("Unable to create an audio connection");
             return;
         }
         // dup2 installs the IPC socket at a stable child descriptor. Ensure its
@@ -259,7 +259,7 @@ private:
         ::close(sockets[1]);
         if (child_fd < 0) {
             ::close(sockets[0]);
-            fail("无法创建音频连接");
+            fail("Unable to create an audio connection");
             return;
         }
         ::fcntl(sockets[0], F_SETFD, FD_CLOEXEC);
@@ -281,6 +281,16 @@ private:
                                       "--volume=" + std::to_string(static_cast<int>(request.value))};
         const auto audio_device = preferred_audio_device();
         if (!audio_device.empty()) args.emplace_back("--audio-device=" + audio_device);
+        // The CM0 ES8389 is clocked from a 19.2 MHz MCLK and its kernel
+        // driver only exposes a 48 kHz clock coefficient.  Let mpv resample
+        // source files such as 44.1 kHz music before ALSA opens the device;
+        // otherwise the driver rejects the stream with -EINVAL.
+        if (audio_device.find("CM0ES8389") != std::string::npos)
+        {
+            args.emplace_back("--audio-samplerate=48000");
+            args.emplace_back("--audio-format=s16");
+            args.emplace_back("--audio-channels=stereo");
+        }
         if (null_audio_) args.emplace_back("--ao=null");
         args.emplace_back("--");
         args.push_back(request.path);
@@ -293,7 +303,7 @@ private:
         if (result != 0) {
             ::close(sockets[0]);
             pid_ = -1;
-            fail(result == ENOENT ? "未找到 mpv，请安装后重试" : "音频播放器启动失败");
+            fail(result == ENOENT ? "mpv not found. Install it and try again." : "Unable to start the audio player");
             return;
         }
         socket_ = sockets[0];
@@ -332,7 +342,7 @@ private:
             state_.loaded     = false;
             const auto reason = json_field(message, "reason");
             state_.finished   = reason == "eof";
-            if (reason == "error") state_.error = "无法播放此文件，请检查文件或音频设备";
+            if (reason == "error") state_.error = "Unable to play this file. Check the file or audio device.";
         }
     }
 
@@ -351,7 +361,7 @@ private:
             }
             if (input_.size() > 65536) {
                 input_.clear();
-                fail("音频播放器返回了无效数据");
+                fail("The audio player returned invalid data");
             }
         }
     }
@@ -395,11 +405,11 @@ private:
                         socket_ = -1;
                     }
                     const auto current = snapshot();
-                    if (!current.finished && current.error.empty()) fail("音频播放意外停止，请重试");
+                    if (!current.finished && current.error.empty()) fail("Playback stopped unexpectedly. Try again.");
                 } else if (std::chrono::steady_clock::now() - started_ > std::chrono::seconds(15)) {
                     const auto current = snapshot();
                     if (current.loading) {
-                        fail("读取音频超时，请检查文件");
+                        fail("Audio read timed out. Check the file.");
                         close_player();
                     }
                 }

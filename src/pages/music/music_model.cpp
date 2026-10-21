@@ -87,7 +87,7 @@ std::vector<MusicTrack> scan_path(const std::string& root, const std::shared_ptr
         track.path           = absolute.string();
         track.id             = track.path;
         track.title          = path.stem().string();
-        track.artist         = "本地音乐";
+        track.artist         = "";
         const auto separator = track.title.find(" - ");
         if (separator != std::string::npos && separator > 0 && separator + 3 < track.title.size()) {
             track.artist = track.title.substr(0, separator);
@@ -239,11 +239,11 @@ const std::string& MusicModel::error() const noexcept
 }
 std::string MusicModel::library_label() const
 {
-    if (scanning_) return "正在查找音乐";
-    if (tracks_.empty()) return "还没有音乐";
+    if (scanning_) return "Searching for music";
+    if (tracks_.empty()) return "No music yet";
     return std::all_of(tracks_.begin(), tracks_.end(), [](const MusicTrack& track) { return track.sample; })
-               ? "示例音乐"
-               : "本地音乐";
+               ? "Sample Music"
+               : "";
 }
 
 void MusicModel::poll()
@@ -441,7 +441,7 @@ MusicModel::ScanResult MusicModel::scan_library(const std::shared_ptr<std::atomi
     if (result.tracks.empty() && !overridden && !cancelled->load()) result.tracks = sample_tracks();
     if (overridden) {
         std::error_code error;
-        if (!fs::is_directory(roots.front(), error)) result.error = "音乐目录不存在，请检查 LILYGO_MUSIC_DIR";
+        if (!fs::is_directory(roots.front(), error)) result.error = "Music folder not found. Check LILYGO_MUSIC_DIR.";
     }
     std::sort(result.tracks.begin(), result.tracks.end(), [](const MusicTrack& a, const MusicTrack& b) {
         if (a.sample && b.sample) return a.artwork < b.artwork;
@@ -461,7 +461,7 @@ void MusicModel::rescan()
         try {
             return scan_library(cancelled);
         } catch (const std::exception&) {
-            return ScanResult{{}, "无法读取音乐目录"};
+            return ScanResult{{}, "Unable to read the music folder"};
         }
     });
 }

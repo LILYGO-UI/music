@@ -164,7 +164,7 @@ void test_empty_library()
     model.seek(15);
     model.poll();
     assert(!model.current_track() && !model.playing() && !model.scanning());
-    assert(model.library_label() == "还没有音乐");
+    assert(model.library_label() == "No music yet");
 }
 
 struct TemporaryDirectory {
@@ -310,7 +310,7 @@ void test_async_scan_and_preferences()
     }));
     assert(model.tracks().empty() && !model.playing() && model.error().empty());
     // An explicitly empty user directory must never be replaced with samples.
-    assert(model.library_label() == "还没有音乐");
+    assert(model.library_label() == "No music yet");
 }
 
 std::string mpv_executable()

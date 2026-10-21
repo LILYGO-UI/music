@@ -160,17 +160,15 @@ lv_obj_t *MusicView::create(lv_obj_t *parent, const char *)
     auto *title = label(header_, "Music", 36);
     lv_obj_set_name_static(title, "app_title");
     flexible(title);
-    label(header_, "离线，随心听。", 14, secondary);
-    button(header_, LV_SYMBOL_REFRESH, Action::rescan, "music_rescan");
 
-    tabs_ = box(surface_, LV_FLEX_FLOW_ROW, 4);
+    tabs_ = box(surface_, LV_FLEX_FLOW_ROW, 8);
     lv_obj_set_height(tabs_, 52);
     lv_obj_set_style_pad_all(tabs_, 4, 0);
     lv_obj_set_style_bg_color(tabs_, lv_color_hex(0xe6e6ed), 0);
     lv_obj_set_style_bg_opa(tabs_, LV_OPA_COVER, 0);
     lv_obj_set_style_radius(tabs_, 16, 0);
-    player_tab_  = button(tabs_, "正在播放", Action::player, "music_player_tab", 100);
-    library_tab_ = button(tabs_, "资料库", Action::library, "music_library_tab", 100);
+    player_tab_  = button(tabs_, "Now Playing", Action::player, "music_player_tab", 100);
+    library_tab_ = button(tabs_, "Library", Action::library, "music_library_tab", 100);
     for (auto *tab : {player_tab_, library_tab_}) {
         flexible(tab);
         lv_obj_set_height(tab, 44);
@@ -187,34 +185,35 @@ lv_obj_t *MusicView::create(lv_obj_t *parent, const char *)
     lv_obj_set_style_bg_opa(library_, LV_OPA_COVER, 0);
     lv_obj_set_style_radius(library_, 24, 0);
     lv_obj_set_style_pad_all(library_, 24, 0);
-    auto *library_heading = box(library_, LV_FLEX_FLOW_ROW, 8);
+    auto *library_heading = box(library_, LV_FLEX_FLOW_ROW, 12);
     lv_obj_set_flex_align(library_heading, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    auto *library_title = label(library_heading, "资料库", 28);
+    auto *library_title = label(library_heading, "Library", 28);
     flexible(library_title);
     library_count_    = label(library_heading, "", 14, secondary);
-    auto *filters     = box(library_, LV_FLEX_FLOW_ROW, 8);
-    all_button_       = button(filters, LV_SYMBOL_AUDIO "  全部歌曲", Action::all, "music_all", 150);
-    favorites_button_ = button(filters, "\xef\x80\x84  收藏", Action::favorites, "music_favorites", 110);
+    button(library_heading, LV_SYMBOL_REFRESH, Action::rescan, "music_rescan");
+    auto *filters     = box(library_, LV_FLEX_FLOW_ROW, 12);
+    all_button_       = button(filters, LV_SYMBOL_AUDIO "  All Songs", Action::all, "music_all", 150);
+    favorites_button_ = button(filters, "\xef\x80\x84  Favorites", Action::favorites, "music_favorites", 140);
     font(lv_obj_get_child(all_button_, 0), 18);
     font(lv_obj_get_child(favorites_button_, 0), 18);
     search_ = lv_textarea_create(library_);
     lv_obj_set_name_static(search_, "music_search");
     lv_obj_set_size(search_, LV_PCT(100), 48);
     lv_textarea_set_one_line(search_, true);
-    lv_textarea_set_placeholder_text(search_, "搜索歌曲、艺人");
+    lv_textarea_set_placeholder_text(search_, "Search songs or artists");
     font(search_, 18);
     lv_obj_set_style_border_width(search_, 0, 0);
     lv_obj_set_style_bg_color(search_, lv_color_hex(components::color_page_background), 0);
     lv_obj_set_style_radius(search_, 12, 0);
     lv_obj_add_event_cb(search_, search_event, LV_EVENT_ALL, this);
-    list_ = box(library_, LV_FLEX_FLOW_COLUMN, 4);
+    list_ = box(library_, LV_FLEX_FLOW_COLUMN, 8);
     lv_obj_set_name_static(list_, "music_track_list");
     lv_obj_set_height(list_, 0);
     lv_obj_set_flex_grow(list_, 1);
     lv_obj_add_flag(list_, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_scroll_dir(list_, LV_DIR_VER);
     lv_obj_set_scrollbar_mode(list_, LV_SCROLLBAR_MODE_AUTO);
-    library_footer_ = label(library_, "正在查找音乐…", 14, secondary);
+    library_footer_ = label(library_, "Searching for music…", 14, secondary);
     ellipsis(library_footer_);
 
     player_ = box(body_, LV_FLEX_FLOW_COLUMN, 16);
@@ -224,12 +223,6 @@ lv_obj_t *MusicView::create(lv_obj_t *parent, const char *)
     lv_obj_set_style_bg_opa(player_, LV_OPA_COVER, 0);
     lv_obj_set_style_radius(player_, 24, 0);
     lv_obj_set_style_pad_all(player_, 28, 0);
-    auto *player_heading = box(player_, LV_FLEX_FLOW_ROW, 8);
-    lv_obj_set_flex_align(player_heading, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    auto *now = label(player_heading, "正 在 播 放", 14, secondary);
-    flexible(now);
-    auto *queue = button(player_heading, LV_SYMBOL_LIST, Action::library, "music_queue");
-    lv_obj_set_height(queue, 32);
     player_main_ = box(player_, LV_FLEX_FLOW_COLUMN, 28);
     lv_obj_set_height(player_main_, 0);
     lv_obj_set_flex_grow(player_main_, 1);
@@ -245,20 +238,25 @@ lv_obj_t *MusicView::create(lv_obj_t *parent, const char *)
 
     controls_ = box(player_main_, LV_FLEX_FLOW_COLUMN, 20);
     lv_obj_set_flex_align(controls_, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER);
-    auto *metadata = box(controls_, LV_FLEX_FLOW_ROW, 8);
+    auto *metadata = box(controls_, LV_FLEX_FLOW_ROW, 12);
     lv_obj_set_flex_align(metadata, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     auto *titles = box(metadata, LV_FLEX_FLOW_COLUMN, 7);
     flexible(titles);
-    song_title_ = label(titles, "你的音乐，随时相伴", 28);
+    song_title_ = label(titles, "Your music, anytime", 28);
     ellipsis(song_title_);
     lv_obj_set_name_static(song_title_, "music_title");
-    artist_ = label(titles, "选一首喜欢的，开始聆听", 18, accent);
+    artist_ = label(titles, "Pick a song and start listening", 18, accent);
     ellipsis(artist_);
     album_ = label(titles, "", 14, secondary);
     ellipsis(album_);
     favorite_      = button(metadata, "\xef\x80\x84", Action::favorite, "music_favorite", 44);
-    auto *timeline = box(controls_, LV_FLEX_FLOW_COLUMN, 12);
-    lv_obj_set_style_pad_top(timeline, 4, 0);
+    auto *timeline = box(controls_, LV_FLEX_FLOW_COLUMN, 16);
+    lv_obj_set_style_pad_top(timeline, 12, 0);
+    // LVGL centers the knob on the indicator edge and expands it by about
+    // 7 px. Its pressed state adds another 3 px of transform, so leave 12 px
+    // inside the timeline to keep the enlarged endpoint fully visible.
+    lv_obj_set_style_pad_left(timeline, 12, 0);
+    lv_obj_set_style_pad_right(timeline, 12, 0);
     progress_ = lv_slider_create(timeline);
     lv_obj_set_name_static(progress_, "music_progress");
     lv_obj_set_width(progress_, LV_PCT(100));
@@ -269,7 +267,7 @@ lv_obj_t *MusicView::create(lv_obj_t *parent, const char *)
     elapsed_       = label(time_row, "0:00", 14, secondary);
     flexible(elapsed_);
     remaining_      = label(time_row, "−0:00", 14, secondary);
-    auto *transport = box(controls_, LV_FLEX_FLOW_ROW, 18);
+    auto *transport = box(controls_, LV_FLEX_FLOW_ROW, 24);
     lv_obj_set_flex_align(transport, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     auto *previous = button(transport, LV_SYMBOL_PREV, Action::previous, "music_previous", 56);
     play_          = button(transport, LV_SYMBOL_PLAY, Action::play, "music_play", 76);
@@ -283,7 +281,7 @@ lv_obj_t *MusicView::create(lv_obj_t *parent, const char *)
         font(lv_obj_get_child(item, 0), 28);
         lv_obj_set_style_text_color(lv_obj_get_child(item, 0), lv_color_hex(ink), 0);
     }
-    auto *volume_row = box(controls_, LV_FLEX_FLOW_ROW, 16);
+    auto *volume_row = box(controls_, LV_FLEX_FLOW_ROW, 20);
     lv_obj_set_height(volume_row, 28);
     lv_obj_set_flex_align(volume_row, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     label(volume_row, LV_SYMBOL_VOLUME_MID, 14, secondary);
@@ -294,10 +292,10 @@ lv_obj_t *MusicView::create(lv_obj_t *parent, const char *)
     slider_style(volume_, 0xadaeb6);
     lv_obj_add_event_cb(volume_, slider_event, LV_EVENT_VALUE_CHANGED, this);
     label(volume_row, LV_SYMBOL_VOLUME_MAX, 14, secondary);
-    auto *modes = box(controls_, LV_FLEX_FLOW_ROW, 8);
+    auto *modes = box(controls_, LV_FLEX_FLOW_ROW, 12);
     lv_obj_set_flex_align(modes, LV_FLEX_ALIGN_SPACE_BETWEEN, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
     shuffle_ = button(modes, LV_SYMBOL_SHUFFLE, Action::shuffle, "music_shuffle");
-    status_  = label(modes, "准备播放", 14, secondary);
+    status_  = label(modes, "Ready to play", 14, secondary);
     flexible(status_);
     lv_obj_set_style_text_align(status_, LV_TEXT_ALIGN_CENTER, 0);
     lv_label_set_long_mode(status_, LV_LABEL_LONG_DOT);
@@ -440,7 +438,7 @@ void MusicView::apply_layout()
     lv_obj_set_height(header_, short_wide ? 48 : 60);
     lv_obj_set_style_pad_row(surface_, short_wide ? 12 : 18, 0);
     lv_obj_set_size(play_, short_wide ? 64 : 76, short_wide ? 64 : 76);
-    for (auto *mode : {shuffle_, repeat_}) lv_obj_set_height(mode, short_wide ? 40 : 48);
+    for (auto *mode : {shuffle_, repeat_}) lv_obj_set_height(mode, short_wide ? 44 : 52);
     if (short_wide)
         lv_obj_add_flag(album_, LV_OBJ_FLAG_HIDDEN);
     else
@@ -462,7 +460,7 @@ void MusicView::apply_layout()
         lv_obj_set_height(art_area_, LV_PCT(100));
         lv_obj_set_width(controls_, LV_PCT(48));
         lv_obj_set_height(controls_, LV_PCT(100));
-        lv_obj_set_style_pad_row(controls_, short_wide ? 8 : 12, 0);
+        lv_obj_set_style_pad_row(controls_, short_wide ? 12 : 16, 0);
         lv_obj_set_style_pad_all(player_, short_wide ? 16 : 24, 0);
     } else {
         lv_obj_remove_flag(tabs_, LV_OBJ_FLAG_HIDDEN);
@@ -483,7 +481,7 @@ void MusicView::apply_layout()
         lv_obj_set_flex_grow(art_area_, 1);
         lv_obj_set_width(controls_, LV_PCT(100));
         lv_obj_set_height(controls_, LV_SIZE_CONTENT);
-        lv_obj_set_style_pad_row(controls_, height < 700 ? 12 : 24, 0);
+        lv_obj_set_style_pad_row(controls_, height < 700 ? 16 : 28, 0);
         lv_obj_set_style_pad_all(player_, width < 400 ? 20 : 28, 0);
     }
     lv_obj_set_style_pad_row(library_, short_wide ? 10 : (wide_ ? 12 : 16), 0);
@@ -501,6 +499,10 @@ void MusicView::apply_layout()
     int cover_size = std::min(lv_obj_get_content_width(art_area_), lv_obj_get_content_height(art_area_) - 42);
     cover_size     = std::clamp(cover_size, 80, 440);
     lv_obj_set_size(cover_, cover_size, cover_size);
+    // The source label below the artwork participates in the column layout
+    // and leaves the square slightly high. Move the artwork down into the
+    // visual center while keeping the label in the same card.
+    lv_obj_set_style_translate_y(cover_, 18, 0);
     layout_busy_ = false;
 }
 
@@ -562,10 +564,10 @@ void MusicView::update_library()
         lv_obj_remove_flag(row, LV_OBJ_FLAG_CLICKABLE);
         lv_obj_add_flag(lv_obj_get_child(row, 0), LV_OBJ_FLAG_HIDDEN);
         auto *titles = lv_obj_get_child(row, 1);
-        lv_label_set_text(lv_obj_get_child(titles, 0), model.scanning() ? "正在查找音乐…" : "还没有歌曲");
+        lv_label_set_text(lv_obj_get_child(titles, 0), model.scanning() ? "Searching for music…" : "No songs yet");
         lv_label_set_text(lv_obj_get_child(titles, 1), view_model_.favorites_only()
-                                                           ? "轻点播放器中的爱心，收藏喜欢的歌曲"
-                                                           : "添加音乐后，轻点右上角刷新");
+                                                           ? "Tap the heart to save favorites"
+                                                           : "Add music, then tap Refresh");
         lv_label_set_text(lv_obj_get_child(row, 2), "");
     } else {
         for (uint32_t i = 0; i < visible.size(); ++i) {
@@ -575,7 +577,7 @@ void MusicView::update_library()
         }
     }
     lv_obj_scroll_to_y(list_, scroll, LV_ANIM_OFF);
-    const auto count = std::to_string(model.tracks().size()) + " 首歌曲";
+    const auto count = std::to_string(model.tracks().size()) + (model.tracks().size() == 1 ? " song" : " songs");
     lv_label_set_text(library_count_, count.c_str());
     lv_label_set_text(library_footer_, model.library_label().c_str());
 }
@@ -590,18 +592,18 @@ void MusicView::update()
         lv_label_set_text(artist_, track->artist.c_str());
         lv_label_set_text(album_, track->album.c_str());
         lv_label_set_text(source_, track->sample ? (track->artist == "Espressif ADF" ? "Espressif ADF · CC BY 3.0"
-                                                                                     : "原创示例 · LILYGO")
-                                                 : "本 地 音 乐");
+                                                                                     : "Original music · LILYGO")
+                                                 : "");
         const auto theme = reinterpret_cast<void *>(static_cast<uintptr_t>(track->artwork));
         if (lv_obj_get_user_data(cover_) != theme) {
             lv_obj_set_user_data(cover_, theme);
             lv_obj_invalidate(cover_);
         }
     } else {
-        lv_label_set_text(song_title_, model.scanning() ? "正在发现好音乐" : "让音乐住进来");
-        lv_label_set_text(artist_, "将歌曲放入 Music 文件夹");
+        lv_label_set_text(song_title_, model.scanning() ? "Discovering music…" : "Add your music");
+        lv_label_set_text(artist_, "Add songs to your Music folder");
         lv_label_set_text(album_, "MP3 / FLAC / WAV / M4A / OGG");
-        lv_label_set_text(source_, "你的音乐，随时相伴");
+        lv_label_set_text(source_, "Your music, anytime");
     }
     text_button(play_, model.playing() ? LV_SYMBOL_PAUSE : LV_SYMBOL_PLAY);
     tint_button(favorite_, track && track->favorite);
@@ -620,8 +622,8 @@ void MusicView::update()
     lv_label_set_text(remaining_,
                       ("−" + MusicViewModel::format_time(model.duration_seconds() - model.position_seconds())).c_str());
     lv_label_set_text(status_, !model.error().empty()
-                                   ? "播放不可用"
-                                   : (model.loading() ? "正在载入…" : (model.playing() ? "正在播放" : "静享好音乐")));
+                                   ? "Playback unavailable"
+                                   : (model.loading() ? "Loading…" : (model.playing() ? "Playing" : "Ready to play")));
     for (auto *control : {play_, favorite_, progress_}) {
         if (track)
             lv_obj_remove_state(control, LV_STATE_DISABLED);

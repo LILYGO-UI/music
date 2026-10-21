@@ -172,11 +172,44 @@ void assert_visible(lv_obj_t *root, const char *name)
     }
 }
 
+void assert_slider_draw_inside_parent(lv_obj_t *slider)
+{
+    lv_area_t slider_bounds;
+    lv_area_t parent_bounds;
+    lv_obj_get_coords(slider, &slider_bounds);
+    lv_obj_get_coords(lv_obj_get_parent(slider), &parent_bounds);
+    const auto knob_half = lv_obj_get_height(slider) >> 1;
+    const auto knob_left = knob_half + lv_obj_get_style_pad_left(slider, LV_PART_KNOB) +
+                           lv_obj_get_style_transform_width(slider, LV_PART_KNOB);
+    const auto knob_right = knob_half + lv_obj_get_style_pad_right(slider, LV_PART_KNOB) +
+                            lv_obj_get_style_transform_width(slider, LV_PART_KNOB);
+    const auto knob_top = knob_half + lv_obj_get_style_pad_top(slider, LV_PART_KNOB) +
+                          lv_obj_get_style_transform_height(slider, LV_PART_KNOB);
+    const auto knob_bottom = knob_half + lv_obj_get_style_pad_bottom(slider, LV_PART_KNOB) +
+                             lv_obj_get_style_transform_height(slider, LV_PART_KNOB);
+    assert(slider_bounds.x1 - knob_left >= parent_bounds.x1);
+    assert(slider_bounds.x2 + knob_right <= parent_bounds.x2);
+    assert(slider_bounds.y1 - knob_top >= parent_bounds.y1);
+    assert(slider_bounds.y2 + knob_bottom <= parent_bounds.y2);
+}
+
+void assert_vertically_centered(lv_obj_t *object, lv_obj_t *parent, int tolerance = 1)
+{
+    lv_area_t object_bounds;
+    lv_area_t parent_bounds;
+    lv_obj_get_coords(object, &object_bounds);
+    lv_obj_get_coords(parent, &parent_bounds);
+    const int object_center = object_bounds.y1 + object_bounds.y2;
+    const int parent_center = parent_bounds.y1 + parent_bounds.y2;
+    assert(std::abs(object_center - parent_center) <= tolerance * 2);
+}
+
 void assert_player_visible(lv_obj_t *root, bool volume_visible = true)
 {
     for (const char *name : {"music_player", "music_cover", "music_title", "music_favorite", "music_play",
                              "music_previous", "music_next", "music_progress", "music_shuffle", "music_repeat"})
         assert_visible(root, name);
+    assert_vertically_centered(find(root, "music_cover"), lv_obj_get_parent(find(root, "music_cover")), 1);
     if (volume_visible) assert_visible(root, "music_volume");
 }
 
@@ -184,6 +217,14 @@ void assert_library_visible(lv_obj_t *root)
 {
     for (const char *name : {"music_library", "music_all", "music_favorites", "music_search", "music_track_list"})
         assert_visible(root, name);
+    auto *list = find(root, "music_track_list");
+    for (uint32_t i = 0; i < lv_obj_get_child_count(list); ++i) {
+        auto *row = lv_obj_get_child(list, i);
+        if (lv_obj_has_flag(row, LV_OBJ_FLAG_HIDDEN)) continue;
+        auto *cover = lv_obj_get_child(row, 0);
+        if (lv_obj_has_flag(cover, LV_OBJ_FLAG_HIDDEN)) continue;
+        assert_vertically_centered(cover, row, 1);
+    }
 }
 
 }  // namespace
@@ -222,6 +263,14 @@ int main(int argc, char **argv)
         }));
         assert(write_ppm(argv[3]));
         assert_player_visible(root);
+        // The default LVGL theme enlarges a slider knob while pressed. Check
+        // both endpoints so the enlarged dot remains inside its parent.
+        for (const auto value : {0, 1000}) {
+            lv_slider_set_value(progress, value, LV_ANIM_OFF);
+            lv_obj_add_state(progress, LV_STATE_PRESSED);
+            assert_slider_draw_inside_parent(progress);
+            lv_obj_remove_state(progress, LV_STATE_PRESSED);
+        }
         if (width > height) assert_library_visible(root);
 
         click(root, "music_play");
@@ -378,7 +427,7 @@ int main(int argc, char **argv)
         test_phase           = "AppKit status-bar container with audio error";
         audio->state.path    = vm.model().current_track()->path;
         audio->state.playing = false;
-        audio->state.error   = "无法播放此文件，请检查文件或音频设备";
+        audio->state.error   = "Unable to play this file. Check the file or audio device.";
         vm.poll();
         refresh(display);
         const std::string error_path = std::string(argv[3]) + ".error.ppm";
