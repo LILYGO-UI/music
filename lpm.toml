@@ -33,12 +33,6 @@ access = "read"
 scope = "shared-data"
 reason = "Read local music files from the configured music folder"
 
-[[project.permissions]]
-id = "filesystem"
-access = "read-write"
-scope = "app-data"
-reason = "Remember volume, playback preferences and favorite songs"
-
 [project.compatibility]
 architectures = ["arm64"]
 min_appkit_version = "0.1.0"
