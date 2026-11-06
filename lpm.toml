@@ -2,7 +2,7 @@ schema_version = 1
 
 [project]
 package = "lilygo-ui-music"
-version = "0.1.0"
+version = "0.1.1"
 app_id = "cc.lilygo.ui.Music"
 title = "Music"
 summary = "A local music player with an iOS-inspired interface"
